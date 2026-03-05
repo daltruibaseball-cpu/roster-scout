@@ -12,6 +12,7 @@ Then open http://localhost:5000
 
 import os
 import re
+import json
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 import gspread
@@ -96,11 +97,16 @@ def scrape():
 
 def _get_creds() -> Credentials:
     """Load Jake's OAuth2 token, refreshing it if expired."""
-    creds = Credentials.from_authorized_user_file(TOKEN_FILE)
+    token_json = os.environ.get("GOOGLE_TOKEN_JSON")
+    if token_json:
+        creds = Credentials.from_authorized_user_info(json.loads(token_json))
+    else:
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
+        if not token_json:
+            with open(TOKEN_FILE, "w") as f:
+                f.write(creds.to_json())
     return creds
 
 
